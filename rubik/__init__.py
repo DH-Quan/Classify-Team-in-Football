@@ -1,0 +1,1 @@
+from .rubik import RubikBB
