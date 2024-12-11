@@ -66,9 +66,7 @@ class RubikBB():
     
 
     def classify_jersey_colors(self, image, bbox):
-        """
-        Phân loại màu áo thành 4 vùng dựa trên bounding box.
-        """
+        # Phân áo thành 4 vùng dựa trên bounding box.
         xmin, ymin, xmax, ymax = bbox
         mid_x = int((xmin + xmax) / 2)
         mid_y = int((ymin + ymax) / 2)

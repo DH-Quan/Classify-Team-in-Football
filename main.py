@@ -3,119 +3,120 @@ from trackers import Tracker
 import cv2
 import numpy as np
 from team_assigner import TeamAssigner
-from player_ball_assigner import PlayerBallAssigner    
+from player_ball_assigner import PlayerBallAssigner
 from camera_movement_estimator import CameraMovementEstimator
 from view_transformer import ViewTransformer
 from speed_and_distance_estimator import SpeedAndDistance_Estimator
-# from rubik import RubikBB
 
 def main():
-    # Read Video
+    # Đọc video
     video_frames = read_video('input_videos/08fd33_4.mp4')
 
-    #Initialize Track
+    # Khởi tạo Tracker
     tracker = Tracker('models/best.pt')
+
+    # Theo dõi đối tượng trong video
     tracks = tracker.get_object_tracks(video_frames,
-                                       read_from_stub=True,
-                                       stub_path='stubs/track_stubs.pkl')
+                                        read_from_stub=True,
+                                        stub_path='stubs/track_stubs.pkl')
     
-    # Get object positions 
+    # Thêm thông tin vị trí vào tracks
     tracker.add_position_to_tracks(tracks)
 
-    # camera movement estimator
+    # Khởi tạo CameraMovementEstimator
     camera_movement_estimator = CameraMovementEstimator(video_frames[0])
+
+    # Ước tính chuyển động của camera
     camera_movement_per_frame = camera_movement_estimator.get_camera_movement(video_frames,
                                                                                 read_from_stub=True,
                                                                                 stub_path='stubs/camera_movement_stub.pkl')
-    camera_movement_estimator.add_adjust_positions_to_tracks(tracks,camera_movement_per_frame)
     
-    #save cropped image of a player
-    # for track_id, player in tracks['players'][0].items():
-    #     bbox = player['bbox']
-    #     frame = video_frames[0]
-    #     #crop bbox from frame 
-    #     cropped_image = frame[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])]
-    #     #save the cropped image 
-    #     cv2.imwrite(f'output_videos/cropped_img.jpg', cropped_image)
-    #     break
+    # Điều chỉnh vị trí của các đối tượng dựa trên chuyển động của camera
+    camera_movement_estimator.add_adjust_positions_to_tracks(tracks, camera_movement_per_frame)
 
-    # View Trasnformer
+    # Khởi tạo ViewTransformer
     view_transformer = ViewTransformer()
+
+    # Biến đổi phối cảnh của các vị trí
     view_transformer.add_transformed_position_to_tracks(tracks)
 
-    # Interpolate Ball Positions
+    # Nội suy vị trí của bóng
     tracks["ball"] = tracker.interpolate_ball_positions(tracks["ball"])
 
-     # Speed and distance estimator
+    # Khởi tạo SpeedAndDistance_Estimator
     speed_and_distance_estimator = SpeedAndDistance_Estimator()
+
+    # Tính toán tốc độ và khoảng cách
     speed_and_distance_estimator.add_speed_and_distance_to_tracks(tracks)
 
-    # # Khởi tạo đối tượng Rubik
-    # rubik = Rubik(n_clusters=2, color_space="rgb")
-
-    # for frame_num, frame in enumerate(video_frames):
-
-    #     # Tiền xử lý hình ảnh
-    #     processed_image = rubik.preprocess_image(frame)  
-
-    #     # Trích xuất vector đặc trưng màu sắc và phân loại cầu thủ
-    #     color_vectors = []  
-    #     for player_id, player in tracks['players'][frame_num].items():  
-    #         bbox = player['bbox']  
-    #         color_vector = rubik.get_player_color_vector(processed_image, bbox)  
-    #         color_vectors.append(color_vector)  
-    #     team_labels = rubik.classify_players_by_color(color_vectors)  
-
-    #     # Gán nhãn đội cho cầu thủ trong biến tracks
-    #     for i, player_id in enumerate(tracks['players'][frame_num].keys()):  
-    #         tracks['players'][frame_num][player_id]['team'] = team_labels[i]  
-
-    # Assign Player Teams
+    # Khởi tạo TeamAssigner
     team_assigner = TeamAssigner()
-    team_assigner.assign_team_color(video_frames[0], 
-                                    tracks['players'][0])
-    
-    log_file = 'output_videos/player_teams.txt'  # Đường dẫn file log
-    with open(log_file, 'w') as f:
-    
+
+    # Phân loại đội bóng ban đầu
+    team_assigner.assign_team_color(video_frames[0], tracks['players'][0])
+
+    # Mở file để ghi log
+    log_file = 'output_videos/player_teams.txt'
+    with open(log_file, 'w', encoding='utf-8') as f:
+        # Lặp qua từng frame
         for frame_num, player_track in enumerate(tracks['players']):
+            if frame_num % 24 == 0:
+                team_assigner.sort_players_to_teams(video_frames[frame_num], tracks['players'][frame_num])
+
+            # Lặp qua từng cầu thủ trong frame
             for player_id, track in player_track.items():
-                team = team_assigner.get_player_team(video_frames[frame_num],   
-                                                    track['bbox'],
-                                                    player_id)
-                tracks['players'][frame_num][player_id]['team'] = team 
+                # Xác định đội của cầu thủ
+                team = team_assigner.get_player_team(video_frames[frame_num],
+                                                            track['bbox'],
+                                                            player_id)
+                # Lưu thông tin đội bóng của cầu thủ
+                tracks['players'][frame_num][player_id]['team'] = team
                 tracks['players'][frame_num][player_id]['team_color'] = team_assigner.team_colors[team]
+                # Ghi thông tin vào file log
+                f.write(f"Frame {frame_num} - Player {player_id}: team {team}\n")
 
-                # Ghi thông tin cầu thủ và đội vào file
-                f.write(f"player {player_id}: team {team}\n") 
+        # Assign Ball Aquisition
+        player_assigner = PlayerBallAssigner()
+        team_ball_control = []
 
-    # Assign Ball Aquisition
-    player_assigner =PlayerBallAssigner()
-    team_ball_control= []
-    for frame_num, player_track in enumerate(tracks['players']):
-        ball_bbox = tracks['ball'][frame_num][1]['bbox']
-        assigned_player = player_assigner.assign_ball_to_player(player_track, ball_bbox)
+        # Lặp qua từng frame
+        for frame_num, player_track in enumerate(tracks['players']):
+            # Kiểm tra xem có bóng trong frame không
+            if 1 in tracks['ball'][frame_num]:
+                ball_bbox = tracks['ball'][frame_num][1]['bbox']
+                # Xác định cầu thủ đang kiểm soát bóng
+                assigned_player = player_assigner.assign_ball_to_player(player_track, ball_bbox)
+                if assigned_player != -1:
+                    tracks['players'][frame_num][assigned_player]['has_ball'] = True
+                    team_ball_control.append(tracks['players'][frame_num][assigned_player]['team'])
+                else:
+                    # Nếu không có cầu thủ nào kiểm soát bóng, giữ nguyên đội kiểm soát bóng trước đó
+                    if team_ball_control:
+                        team_ball_control.append(team_ball_control[-1])
+                    else:
+                        team_ball_control.append(None)
+            else:
+                # Xử lý trường hợp không tìm thấy bóng
+                assigned_player = -1
+                if team_ball_control:
+                    team_ball_control.append(team_ball_control[-1])
+                else:
+                    team_ball_control.append(None)
 
-        if assigned_player != -1:
-            tracks['players'][frame_num][assigned_player]['has_ball'] = True
-            team_ball_control.append(tracks['players'][frame_num][assigned_player]['team'])
-        else:
-            team_ball_control.append(team_ball_control[-1])
-    team_ball_control= np .array(team_ball_control)
+        team_ball_control = np.array(team_ball_control)
 
-    # Draw output
-    ## Draw object Tracks
-    output_video_frames = tracker.draw_annotations(video_frames, tracks, team_ball_control)
+        # Vẽ kết quả
+        ## Vẽ theo dõi đối tượng
+        output_video_frames = tracker.draw_annotations(video_frames, tracks, team_ball_control)
 
-    ## Draw Camera movement
-    output_video_frames = camera_movement_estimator.draw_camera_movement(output_video_frames,camera_movement_per_frame)
+        ## Vẽ chuyển động của camera
+        output_video_frames = camera_movement_estimator.draw_camera_movement(output_video_frames, camera_movement_per_frame)
 
-    ## Draw Speed and Distance
-    speed_and_distance_estimator.draw_speed_and_distance(output_video_frames,tracks)
+        ## Vẽ tốc độ và khoảng cách
+        speed_and_distance_estimator.draw_speed_and_distance(output_video_frames, tracks)
 
-    # Save video
+    # Lưu video
     save_video(output_video_frames, 'output_videos/output_video.avi')
-
 
 if __name__ == '__main__':
     main()

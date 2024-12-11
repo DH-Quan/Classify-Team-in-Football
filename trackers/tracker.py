@@ -164,22 +164,39 @@ class Tracker:
 
         return frame
 
-    def draw_team_ball_control(self,frame,frame_num,team_ball_control):
-        # Draw a semi-transparent rectaggle 
+    def draw_team_ball_control(self, frame, frame_num, team_ball_control):
+        # Vẽ hình chữ nhật mờ
         overlay = frame.copy()
-        cv2.rectangle(overlay, (1350, 850), (1900,970), (255,255,255), -1 )
+        cv2.rectangle(overlay, (1350, 850), (1900, 970), (255, 255, 255), -1)
         alpha = 0.4
         cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
 
-        team_ball_control_till_frame = team_ball_control[:frame_num+1]
-        # Get the number of time each team had ball control
-        team_1_num_frames = team_ball_control_till_frame[team_ball_control_till_frame==1].shape[0]
-        team_2_num_frames = team_ball_control_till_frame[team_ball_control_till_frame==2].shape[0]
-        team_1 = team_1_num_frames/(team_1_num_frames+team_2_num_frames)
-        team_2 = team_2_num_frames/(team_1_num_frames+team_2_num_frames)
+        # Xác định đội đang kiểm soát bóng
+        team_with_ball = team_ball_control[frame_num] if frame_num < len(team_ball_control) else None
 
-        cv2.putText(frame, f"Team 1 Ball Control: {team_1*100:.2f}%",(1400,900), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,0), 3)
-        cv2.putText(frame, f"Team 2 Ball Control: {team_2*100:.2f}%",(1400,950), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,0), 3)
+        team_ball_control_till_frame = team_ball_control[:frame_num + 1]
+
+        # Tính toán số lượng frame mỗi đội kiểm soát bóng
+        team_1_num_frames = np.count_nonzero(team_ball_control_till_frame == 1)
+        team_2_num_frames = np.count_nonzero(team_ball_control_till_frame == 2)
+
+        # Tránh lỗi chia cho 0
+        if team_1_num_frames + team_2_num_frames == 0:
+            team_1_percentage = 0.0
+            team_2_percentage = 0.0
+        else:
+            team_1_percentage = team_1_num_frames / (team_1_num_frames + team_2_num_frames)
+            team_2_percentage = team_2_num_frames / (team_1_num_frames + team_2_num_frames)
+
+        # Thay đổi màu chữ trong bảng thống kê
+        team_1_color = (0, 0, 0) if team_with_ball == 1 else (0, 255, 0)  # Màu xanh nếu đội 1 có bóng
+        team_2_color = (0, 0, 0) if team_with_ball == 2 else (0, 255, 0)  # Màu xanh nếu đội 2 có bóng
+
+        # Hiển thị thông tin kiểm soát bóng
+        cv2.putText(frame, f"Team w Ball Control: {team_1_percentage * 100:.2f}%", (1400, 900),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, team_1_color, 3)
+        cv2.putText(frame, f"Team g Ball Control: {team_2_percentage * 100:.2f}%", (1400, 950),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, team_2_color, 3)
 
         return frame
 

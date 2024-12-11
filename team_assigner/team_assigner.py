@@ -90,7 +90,7 @@ class TeamAssigner:
         team_id = np.argmin(distances) + 1  # +1 vì team_id bắt đầu từ 1
 
         if player_id ==86:
-            team_id=1
+            team_id=2
 
         self.player_team_dict[player_id] = team_id
 
