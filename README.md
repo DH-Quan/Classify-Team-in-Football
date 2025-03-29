@@ -2,10 +2,6 @@
 <p align="center"><img src="https://img.icons8.com/color/48/000000/vietnam-circular.png"/></p>
 <h3 align="center">A Computer Vision project built by DHQuan - UIT 🇻🇳</h3>
 
-<p align="center">
-  <img src="" height="400"/>
-</p>
-
 ---
 
 ## 🚀 Overview
