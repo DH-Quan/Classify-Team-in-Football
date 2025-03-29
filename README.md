@@ -1,4 +1,4 @@
-<h1 align="center">⚽ Football Video Analyzer - Classify Team in Football</h1>
+<h1 align="center">⚽ Football Video Analysis - Classify Team in Football</h1>
 <p align="center"><img src="https://img.icons8.com/color/48/000000/vietnam-circular.png"/></p>
 <h3 align="center">A Computer Vision project built by DHQuan - UIT 🇻🇳</h3>
 
