@@ -1,0 +1,82 @@
+# -------------------------------
+# CÁC CẤU HÌNH CHUNG
+# -------------------------------
+paths:
+  # dataset_root: "datasets/"                      # Thư mục chứa dữ liệu TeamTrack
+  # dataset_split: "train"                         # Chọn tập train, val hoặc test
+  # annotations: "datasets/train/annotations/"     # Đường dẫn đến file CSV chứa bbox
+  # videos: "datasets/train/videos/"               # Đường dẫn đến video TeamTrack
+  video_input: "input_videos/121364_0.mp4"         # Đường dẫn video đầu vào
+  video_output: "output_videos/output_video.avi"     # Đường dẫn video đầu ra
+  model_path: "models/best.pt"                       # Đường dẫn mô hình YOLO
+  log_team: "output_videos/player_teams.txt"           # Đường dẫn file lg teamteam
+  log_info: "output_videos/teams_info.txt"
+  stubs:
+    track: "stubs/track_stubs.pkl"                   # File lưu track của các đối tượng
+    camera_movement: "stubs/camera_movement_stub.pkl"  # File lưu chuyển động camera
+
+tracking_params:
+  batch_size: 20                                   # Số lượng frame xử lý 1 batch
+  conf_threshold: 0.1                              # Ngưỡng confidence cho detection
+
+# -------------------------------
+# CẤU HÌNH CHO TỪNG FILE
+# -------------------------------
+
+# main.py
+main:
+  fps: 25                                        # Frames per second của video
+  classification_interval: 25                    # Khoảng cách frame phân loại lại đội
+
+# yolo_inference.py
+yolo_inference:
+
+# team_assigner.py
+team_assigner:
+
+
+# player_ball_assigner.py
+player_ball_params:
+  max_player_ball_distance: 70                   # Khoảng cách tối đa để gán bóng cho cầu thủ
+
+# camera_movement_estimator.py
+camera_movement_params:
+  minimum_distance: 5                            # Khoảng cách tối thiểu để xác định chuyển động
+  lk_params:
+    winSize: [15, 15]
+    maxLevel: 2
+    criteria: [3, 10, 0.03]                         # [số lần lặp, epsilon]
+  features:
+    maxCorners: 100
+    qualityLevel: 0.3
+    minDistance: 3
+    blockSize: 7
+    mask_columns: [0, 20, 900, 1050]             # Xác định vùng cần phát hiện feature
+
+# speed_and_distance_estimator.py
+speed_distance_params:
+  frame_window: 5                                # Số frame dùng để ước lượng tốc độ
+  frame_rate: 24                                 # Frame rate của video
+
+# view_transformer.py
+view_transform_params:
+  court_width: 68                                # Chiều rộng sân (m)
+  court_length: 23.32                            # Chiều dài sân (m)
+  pixel_vertices:
+    - [110, 1035]
+    - [265, 275]
+    - [910, 260]
+    - [1640, 915]
+  target_vertices:
+    - [0, 68]
+    - [0, 0]
+    - [23.32, 0]
+    - [23.32, 68]
+
+# bbox_utils.py
+bbox_utils:
+
+
+# video_utils.py
+video_utils:
+
