@@ -1,0 +1,11 @@
+Final Ball Control Ratios:
+Team 1: 85.10%
+Team 2: 14.90%
+
+Transition Counts:
+Team 1 - Total Transitions: 68, Correct Transitions: 54
+Team 2 - Total Transitions: 21, Correct Transitions: 8
+
+Transition Accuracy:
+Team 1 Transition Accuracy: 79.41%
+Team 2 Transition Accuracy: 38.10%
